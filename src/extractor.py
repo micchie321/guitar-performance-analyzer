@@ -7,7 +7,7 @@ from scipy.stats import entropy
 
 class GuitarFeatureExtractor:
     """
-    ギター演奏の35次元（可変）特徴量を抽出するコアクラス。
+    Core class for extracting 35-dimensional (variable) features from guitar performances.
     """
     def __init__(self, config_path="config.yaml"):
         import os
@@ -15,29 +15,27 @@ class GuitarFeatureExtractor:
         with open(config_path, 'r', encoding='utf-8') as f:
             self.cfg = yaml.safe_load(f)
         
-        # モデルの絶対パスを構築してチェック
+        # Build absolute path for the model
         conf_dir = os.path.dirname(os.path.abspath(config_path))
         model_rel_path = self.cfg['cnn_logic']['model_path']
         model_path = os.path.abspath(os.path.join(conf_dir, model_rel_path))
         
         print(f"Debug: Attempting to load model from: {model_path}")
         if not os.path.exists(model_path):
-            raise FileNotFoundError(f"❌ モデルファイルが見つかりません: {model_path}")
+            raise FileNotFoundError(f"Error: Model file not found: {model_path}")
 
         print("Debug: Loading TensorFlow model (This may take a few seconds)...")
         self.model = tf.keras.models.load_model(model_path)
-        print("✅ Debug: Model loaded successfully!")
+        print("Debug: Model loaded successfully.")
 
-        # --- 重要: ここから下の代入が不足していたためエラーが出ていました ---
         self.sr = self.cfg['analysis']['sr']
         self.n_mfcc = self.cfg['timbre']['n_mfcc']
-        # ------------------------------------------------------------------
 
     def extract_all(self, y):
         """
-        与えられた音声波形からすべての特徴量を抽出し、辞書形式で返す。
+        Extracts all features from the given audio waveform and returns them as a dictionary.
         """
-        # A. オンセット検出 (帯域制限 200Hz - 8000Hz)
+        # A. Onset Detection (Bandpass 200Hz - 8000Hz)
         onset_env = librosa.onset.onset_strength(
             y=y, sr=self.sr, 
             fmin=self.cfg['onset']['fmin'], 
@@ -45,17 +43,17 @@ class GuitarFeatureExtractor:
         )
         onset_frames = librosa.onset.onset_detect(onset_envelope=onset_env, sr=self.sr)
         
-        # B. 各カテゴリの特徴量抽出
+        # B. Feature Extraction per Category
         tech_feats = self._get_technique_features(y, onset_frames)
         timbre_feats = self._get_timbre_features(y)
         tonal_feats = self._get_tonal_features(y)
         rhythm_feats = self._get_rhythm_features(y, onset_env, onset_frames)
 
-        # 統合
+        # Integration
         return {**tech_feats, **timbre_feats, **tonal_feats, **rhythm_feats}
 
     def _get_technique_features(self, y, onset_frames):
-        """奏法比率と変化回数の算出 (150ms Active + 350ms Padding)"""
+        """Calculate technique ratios and change counts (150ms Active + 350ms Padding)"""
         onset_samples = librosa.frames_to_samples(onset_frames)
         backtrack = int(self.cfg['cnn_logic']['backtrack_sec'] * self.sr)
         active_len = int(self.cfg['cnn_logic']['active_audio_sec'] * self.sr)
@@ -64,12 +62,12 @@ class GuitarFeatureExtractor:
         labels = []
         for s in onset_samples:
             start = max(0, s - backtrack)
-            # 150ms抽出
+            # Extract 150ms
             chunk = y[start : start + active_len]
-            # 350msゼロ埋め (合計 0.5s)
+            # Pad with zeros for 350ms (Total 0.5s)
             padded = np.pad(chunk, (0, max(0, total_len - len(chunk))))[:total_len]
             
-            # スペクトログラム変換と正規化
+            # Mel-spectrogram conversion and normalization
             mels = librosa.feature.melspectrogram(y=padded, sr=self.sr, n_mels=128, hop_length=512)
             X = (librosa.power_to_db(mels, ref=np.max) + 80.0) / 80.0
             p = self.model.predict(X[np.newaxis, ..., np.newaxis], verbose=0)[0]
@@ -84,12 +82,12 @@ class GuitarFeatureExtractor:
         }
 
     def _get_timbre_features(self, y):
-        """音色に関する特徴量 (MFCC次元数可変)"""
+        """Timbre-related features (Variable MFCC dimensions)"""
         centroid = np.mean(librosa.feature.spectral_centroid(y=y, sr=self.sr))
         rolloff = np.mean(librosa.feature.spectral_rolloff(y=y, sr=self.sr))
         zcr = np.mean(librosa.feature.zero_crossing_rate(y))
         
-        # mid_scoop (低域+高域 / 中域)
+        # Mid-scoop (Low + High / Mid)
         S = np.abs(librosa.stft(y))
         freqs = librosa.fft_frequencies(sr=self.sr)
         low_idx = freqs < self.cfg['timbre']['mid_scoop_low']
@@ -110,9 +108,9 @@ class GuitarFeatureExtractor:
         return feats
 
     def _get_tonal_features(self, y):
-        """音程・和音に関する特徴量"""
+        """Tonal and harmonic features"""
         chroma = librosa.feature.chroma_stft(y=y, sr=self.sr)
-        # pitch_variance (周波数重心の標準偏差)
+        # pitch_variance (Standard deviation of spectral centroid)
         pitch_variance = np.std(librosa.feature.spectral_centroid(y=y, sr=self.sr))
         
         return {
@@ -120,14 +118,13 @@ class GuitarFeatureExtractor:
             "tonal_stability": float(1.0 / (np.std(chroma) + 1e-9)),
             "pitch_variance": float(pitch_variance),
             "pitch_confidence": float(np.mean(np.max(chroma, axis=0))),
-            # その他、FeatureExtractor.pyのロジックに準じた項目を追加
             "dissonance": float(np.mean(np.diff(chroma, axis=0)**2)),
             "melodiousness": float(1.0 - entropy(np.mean(chroma, axis=1) + 1e-9)),
             "minorness": float(np.mean(chroma[3, :] + chroma[8, :]))
         }
 
     def _get_rhythm_features(self, y, onset_env, onset_frames):
-        """リズムに関する特徴量 (IOI比率対応)"""
+        """Rhythm-related features (Supports IOI ratio)"""
         iois = np.diff(librosa.frames_to_samples(onset_frames) / self.sr)
         
         r_mean, r_std = 1.0, 0.0
@@ -135,7 +132,7 @@ class GuitarFeatureExtractor:
             ratios = iois[:-1] / (iois[1:] + 1e-5)
             r_mean, r_std = np.mean(ratios), np.std(ratios)
 
-        # 複雑性 (IOIのエントロピー)
+        # Complexity (Entropy of IOI)
         complexity = entropy(pd.Series(np.round(iois/0.05)*0.05).value_counts()) if len(iois) > 0 else 0.0
         tempo, _ = librosa.beat.beat_track(onset_envelope=onset_env, sr=self.sr)
         

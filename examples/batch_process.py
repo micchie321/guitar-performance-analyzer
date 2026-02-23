@@ -7,7 +7,7 @@ import pandas as pd
 from tqdm import tqdm
 
 # ==========================================
-# ⚙️ パス設定
+# Path Configuration
 # ==========================================
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(current_dir, ".."))
@@ -16,28 +16,28 @@ sys.path.insert(0, project_root)
 from src.extractor import GuitarFeatureExtractor
 
 def batch_process(input_dir, output_file):
-    print(f"🎸 Guitar Performance Analyzer - Batch Processor")
-    print(f"入力ディレクトリ: {input_dir}")
-    print(f"出力ファイル: {output_file}")
+    print("Guitar Performance Analyzer - Batch Processor")
+    print(f"Input Directory: {input_dir}")
+    print(f"Output File: {output_file}")
     
     config_path = os.path.join(project_root, "config.yaml")
     
     try:
         extractor = GuitarFeatureExtractor(config_path=config_path)
-        print("✅ モデルとExtractorのロード完了\n")
+        print("Success: Model and Extractor loaded successfully.\n")
     except Exception as e:
-        print(f"❌ 初期化エラー: {e}")
+        print(f"Error: Initialization failed: {e}")
         return
 
     phrase_sec = extractor.cfg['analysis']['phrase_length_sec']
     sr = extractor.sr
 
-    # 指定ディレクトリおよびサブディレクトリ内のWAVをすべて検索
+    # Search for all WAV files in the target directory and subdirectories
     search_pattern = os.path.join(input_dir, "**", "*.wav")
     input_files = glob.glob(search_pattern, recursive=True)
     
     if not input_files:
-        print(f"⚠️ 指定されたディレクトリ ({input_dir}) に .wav ファイルが見つかりません。")
+        print(f"Warning: No .wav files found in the specified directory ({input_dir}).")
         return
 
     all_results = []
@@ -53,7 +53,7 @@ def batch_process(input_dir, output_file):
             for i in range(0, len(y), samples_per_phrase):
                 phrase_y = y[i : i + samples_per_phrase]
                 
-                # 指定秒数の半分未満の端数はスキップ
+                # Skip fragments shorter than half of the specified window length
                 if len(phrase_y) < samples_per_phrase * 0.5:
                     continue
 
@@ -71,13 +71,13 @@ def batch_process(input_dir, output_file):
         
         os.makedirs(os.path.dirname(os.path.abspath(output_file)), exist_ok=True)
         df[cols].to_csv(output_file, index=False, encoding="utf-8-sig")
-        print(f"\n✅ 処理完了! 合計 {len(all_results)} フレーズの特徴量を抽出しました。")
-        print(f"📁 保存先: {os.path.abspath(output_file)}")
+        print(f"\nProcessing complete. Extracted features from a total of {len(all_results)} phrases.")
+        print(f"Saved to: {os.path.abspath(output_file)}")
     else:
-        print("\n⚠️ 抽出可能なフレーズデータがありませんでした。")
+        print("\nWarning: No valid phrase data could be extracted.")
 
     if error_files:
-        print(f"\n⚠️ 以下の {len(error_files)} ファイルでエラーが発生し、スキップされました:")
+        print(f"\nWarning: Errors occurred in the following {len(error_files)} files and were skipped:")
         for err_file, err_msg in error_files:
             print(f"  - {err_file}: {err_msg}")
 
