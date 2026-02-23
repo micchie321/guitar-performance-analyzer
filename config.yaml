@@ -1,0 +1,20 @@
+# config.yaml
+analysis:
+  sr: 22050
+  phrase_length_sec: 4.0   # 1フレーズの長さ (例: 4.0秒)
+
+cnn_logic:
+  model_path: "models/guitar_3class_audiomentations.h5"
+  active_audio_sec: 0.15   # アタック検出から150msを使用
+  total_input_sec: 0.5     # 残り350msはゼロ埋め
+  backtrack_sec: 0.02      # 20ms遡る
+
+onset:
+  fmin: 200                # 帯域制限
+  fmax: 8000
+  threshold: 0.3           # オンセット検出の感度（正規化後）
+
+timbre:
+  n_mfcc: 13               # 可変MFCC次元数
+  mid_scoop_low: 400
+  mid_scoop_high: 2000

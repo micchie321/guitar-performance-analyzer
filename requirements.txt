@@ -1,0 +1,19 @@
+# ==========================================
+# Guitar Performance Analyzer Dependencies
+# ==========================================
+
+# Core Audio & Math
+numpy<2.0.0
+librosa>=0.10.0
+scipy>=1.10.0
+
+# Machine Learning
+tensorflow>=2.13.0
+
+# Data Processing & Utilities
+pandas>=2.0.0
+PyYAML>=6.0
+tqdm>=4.65.0
+
+# Audio I/O (For real-time monitor)
+PyAudio>=0.2.13
