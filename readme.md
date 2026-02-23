@@ -14,7 +14,7 @@ The core extractor analyzes phrases and outputs a 35D dictionary containing the 
 1. **Technique (4 dimensions):** Ratios of playing techniques in the phrase (`tech_dead`, `tech_pm`, `tech_open`) and the number of technique changes (`tech_change_count`).
 2. **Timbre (17 dimensions):** Physical sound qualities including `spectral_centroid` (brightness), `spectral_rolloff` (sharpness), `zcr` (noisiness), `mid_scoop`, and `mfcc_1` to `mfcc_13` (vocal tract/body resonance).
 3. **Tonal (7 dimensions):** Pitch and harmonic relationships such as `polyphony_score`, `dissonance`, `pitch_variance`, `tonal_stability`, and `minorness`.
-4. **Rhythm (7 dimensions):** Timing and groove indicators including `complexity`, `ioi_ratio_mean` / `ioi_ratio_std` (Inter-Onset Interval variability), `tempo`, `note_density`, and `articulation`.
+4. **Rhythm (7 dimensions):** Timing and groove indicators including `complexity`, `rhythm_ratio_average` / `rhythm_ratio_std` (Inter-Onset Interval variability), `tempo`, `note_density`, and `articulation`.
 
 ### Application to Emotional Metrics (Valence-Arousal)
 The 35D features provided by this library are designed based on "Mid-level features" proposed in music emotion recognition research (e.g., Kirke & Miranda, 2013). 
@@ -71,7 +71,7 @@ python verify_setup.py
 1. **奏法 / Technique (4次元):** 各奏法の割合（`tech_dead`, `tech_pm`, `tech_open`）および奏法の変化回数。
 2. **音色 / Timbre (17次元):** 音の明るさ（`spectral_centroid`）、鋭さ（`spectral_rolloff`）、楽器の響きを表す `mfcc_1` 〜 `mfcc_13` など。
 3. **音程 / Tonal (7次元):** 和音の複雑さ（`polyphony_score`）、不協和度（`dissonance`）、調的安定性（`tonal_stability`）、マイナー感（`minorness`）など。
-4. **リズム / Rhythm (7次元):** リズムの複雑度（`complexity`）、テンポ（`tempo`）、音符の密度（`note_density`）、アーティキュレーション（`articulation`）など。
+4. **リズム / Rhythm (7次元):** リズムの複雑度（`complexity`）、テンポ（`tempo`）、音符の密度（`note_density`）、アーティキュレーション（`articulation`）、`rhythm_ratio_average` など。
 
 ### 感性指標（Valence-Arousal）への応用について
 本ライブラリの特徴量は、先行研究（Kirke & Miranda等）で提唱されている「感性推定に寄与する中間特徴量」をベースに設計されています。 

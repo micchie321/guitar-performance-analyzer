@@ -127,10 +127,10 @@ class GuitarFeatureExtractor:
         """Rhythm-related features (Supports IOI ratio)"""
         iois = np.diff(librosa.frames_to_samples(onset_frames) / self.sr)
         
-        r_mean, r_std = 1.0, 0.0
+        r_avg, r_std = 1.0, 0.0
         if len(iois) > 1:
             ratios = iois[:-1] / (iois[1:] + 1e-5)
-            r_mean, r_std = np.mean(ratios), np.std(ratios)
+            r_avg, r_std = np.mean(ratios), np.std(ratios)
 
         # Complexity (Entropy of IOI)
         complexity = entropy(pd.Series(np.round(iois/0.05)*0.05).value_counts()) if len(iois) > 0 else 0.0
@@ -138,7 +138,7 @@ class GuitarFeatureExtractor:
         
         return {
             "rhythmic_complexity": float(complexity),
-            "rhythm_ratio_mean": float(r_mean),
+            "rhythm_ratio_average": float(r_avg),
             "rhythm_ratio_std": float(r_std),
             "tempo": float(tempo[0] if isinstance(tempo, np.ndarray) else tempo),
             "note_density": float(len(onset_frames) / (len(y)/self.sr + 1e-9)),
