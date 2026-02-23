@@ -1,0 +1,5 @@
+# Ignore temporary test files
+result.csv
+test_wav_input/
+__pycache__/
+*.h5
